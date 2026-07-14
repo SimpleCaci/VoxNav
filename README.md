@@ -4,7 +4,7 @@ A Windows voice-control assistant for mouse movement, keyboard shortcuts, applic
 
 VoxNav explores hands-free desktop navigation with an intentionally explicit command vocabulary. Global hotkeys trigger listening and dictation modes, while a separate parser maps recognized phrases to local desktop actions.
 
-> **Status:** functional Windows prototype. The command architecture is clear, but automated tests, offline recognition, permission guidance, and safeguards for destructive desktop actions are still needed.
+> **Status:** functional Windows prototype. The parser has deterministic tests, a side-effect-free demo mode, and visible decision tracing. Offline recognition, broader device testing, and safeguards for high-impact desktop actions are still needed.
 
 ## Capabilities
 
@@ -16,6 +16,8 @@ VoxNav explores hands-free desktop navigation with an intentionally explicit com
 - dictation with spoken punctuation and editing commands
 - emergency stop through Escape
 - PyAutoGUI corner fail-safe
+- heard → matched → executed command timeline in the terminal
+- safe text preview mode that never controls the real desktop
 
 ## Architecture
 
@@ -24,6 +26,7 @@ microphone
   -> speech recognition
   -> normalized transcript
   -> command parser
+       -> command trace console
        -> action executor
        -> mouse / keyboard / media / app launch
 ```
@@ -52,6 +55,18 @@ python -c "import pyautogui, keyboard, speech_recognition, pyaudio; print('OK')"
 If PyAudio cannot be installed, use a compatible Python version and an official wheel rather than running untrusted installation scripts.
 
 ## Run
+
+### Safe command preview
+
+Exercise the real parser without granting microphone access or controlling the keyboard and mouse:
+
+```powershell
+python main.py --text "move right faster" --text "open notepad"
+```
+
+The terminal shows each command moving through `HEARD`, `MATCHED`, and `EXECUTED` stages. Unknown or disallowed commands appear as `IGNORED`.
+
+### Live voice control
 
 ```powershell
 python main.py
@@ -85,7 +100,13 @@ The current speech-recognition backend sends audio to an external Google service
 
 ## Validation status
 
-No automated tests or CI workflow currently exist. The command parser is the best first testing target because it can be validated with a fake action executor without moving the real mouse.
+The standard-library test suite covers transcript normalization, exact commands, movement modifiers, application allowlist feedback, event tracing, and the side-effect-free preview path:
+
+```powershell
+python -m unittest discover -s tests -v
+```
+
+Microphone recognition, global hotkeys, and real desktop actions still require an intentional Windows manual test.
 
 ## Known limitations
 
@@ -93,15 +114,14 @@ No automated tests or CI workflow currently exist. The command parser is the bes
 - speech recognition requires internet access
 - application mappings are Windows-specific
 - foreground context is not checked before keyboard actions
-- launch commands use shell execution and need tighter allowlisting
-- there is no visible tray status or confirmation for risky commands
+- there is no tray status or confirmation step for risky commands
 
 ## Roadmap
 
-- add unit tests for parsing and state transitions
-- replace shell-based launch behavior with strict executable mappings
+- expand tests across dictation and state transitions
+- add confirmation policies for high-impact shortcuts
 - add offline speech recognition with Vosk or Whisper
-- add audible/visual confirmation and cancellation
+- add audible confirmation and cancellation
 - add custom commands and a system-tray interface
 - package a signed Windows build after safety testing
 
