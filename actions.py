@@ -172,13 +172,13 @@ class ActionExecutor:
         if raw_command is None:
             return False
 
-        expanded_command = os.path.expandvars(raw_command)
+        command = [os.path.expandvars(part) for part in raw_command]
 
         try:
-            subprocess.Popen(expanded_command, shell=True)
+            subprocess.Popen(command, shell=False)
             print(f"Opened application: {app_name}")
             return True
-        except Exception as error:
+        except (FileNotFoundError, OSError) as error:
             print(f"Failed to open {app_name}: {error}")
             return False
 

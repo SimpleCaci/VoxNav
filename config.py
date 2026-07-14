@@ -73,17 +73,18 @@ DICTATION_SPECIAL_COMMANDS = {
 
 # Supported application launch paths / commands.
 APP_COMMANDS = {
-    "chrome": r"C:\Program Files\Google\Chrome\Application\chrome.exe",
-    "spotify": r"C:\Users\%USERNAME%\AppData\Roaming\Spotify\Spotify.exe",
+    "chrome": (r"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",),
+    "spotify": (r"C:\\Users\\%USERNAME%\\AppData\\Roaming\\Spotify\\Spotify.exe",),
     "discord": (
-        r"C:\Users\%USERNAME%\AppData\Local\Discord\Update.exe "
-        r"--processStart Discord.exe"
+        r"C:\\Users\\%USERNAME%\\AppData\\Local\\Discord\\Update.exe",
+        "--processStart",
+        "Discord.exe",
     ),
-    "notepad": "notepad.exe",
-    "calculator": "calc.exe",
-    "explorer": "explorer.exe",
-    "file explorer": "explorer.exe",
-    "paint": "mspaint.exe",
+    "notepad": ("notepad.exe",),
+    "calculator": ("calc.exe",),
+    "explorer": ("explorer.exe",),
+    "file explorer": ("explorer.exe",),
+    "paint": ("mspaint.exe",),
 }
 
 # Optional project paths.
