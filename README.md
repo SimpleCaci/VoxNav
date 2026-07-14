@@ -1,218 +1,110 @@
-VoxNav — Voice-Controlled Desktop Assistant
+# VoxNav
 
-VoxNav is a Windows-based voice assistant that allows you to control your computer using speech.
+A Windows voice-control assistant for mouse movement, keyboard shortcuts, application launching, media control, and real-time dictation.
 
-It supports:
+VoxNav explores hands-free desktop navigation with an intentionally explicit command vocabulary. Global hotkeys trigger listening and dictation modes, while a separate parser maps recognized phrases to local desktop actions.
 
-Mouse control
-Keyboard shortcuts
-Media control
-Application launching
-Real-time dictation
-Prerequisites
-1. Python Version (IMPORTANT)
+> **Status:** functional Windows prototype. The command architecture is clear, but automated tests, offline recognition, permission guidance, and safeguards for destructive desktop actions are still needed.
 
-This project requires Python 3.11–3.13.
+## Capabilities
 
-Python 3.14 is NOT supported due to PyAudio compatibility issues.
+- one-shot and continuous mouse movement with speed modifiers
+- left, right, and double clicking
+- scrolling and common browser/editing shortcuts
+- media and volume keys
+- configured application launching
+- dictation with spoken punctuation and editing commands
+- emergency stop through Escape
+- PyAutoGUI corner fail-safe
 
-Check your version:
-python --version
+## Architecture
 
-If you are on Python 3.14, install Python 3.13:
+```text
+microphone
+  -> speech recognition
+  -> normalized transcript
+  -> command parser
+       -> action executor
+       -> mouse / keyboard / media / app launch
+```
 
-winget install Python.Python.3.13
+`state.py` tracks listening, dictation, and continuous-movement state. `config.py` contains hotkeys, movement values, and application mappings.
 
-or download manually from:
-https://www.python.org/downloads/
+## Requirements
 
-Make sure to check “Add Python to PATH” during installation.
+- Windows
+- Python 3.11–3.13
+- microphone access
+- internet access for the current Google speech-recognition backend
 
-2. Create Virtual Environment
+Python 3.14 is not currently supported because of PyAudio compatibility.
 
-In your project folder:
+## Setup
 
+```powershell
 py -3.13 -m venv .venv
-.venv\Scripts\activate
-
-3. Install Dependencies
-
+.\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
-
-If PyAudio fails:
-
-python -m pip install pipwin
-python -m pipwin install pyaudio
-
-4. Verify Installation
-
 python -c "import pyautogui, keyboard, speech_recognition, pyaudio; print('OK')"
+```
 
-5. VS Code Setup (Important)
+If PyAudio cannot be installed, use a compatible Python version and an official wheel rather than running untrusted installation scripts.
 
-If using VS Code:
+## Run
 
-Press Ctrl + Shift + P
-Select Python: Select Interpreter
-Choose: .venv\Scripts\python.exe
-
-Avoid using "Run Code". Use:
-
-Run Python File in Terminal
-or terminal commands
-Running the App
-
+```powershell
 python main.py
+```
 
-Controls
-Hotkeys
+### Hotkeys
 
-F8 → Listen for one command
-F9 → Toggle dictation mode
-ESC → Stop movement / exit dictation
+| Key | Action |
+|---|---|
+| F8 | Listen for one command |
+| F9 | Toggle dictation mode |
+| Escape | Stop continuous movement or leave dictation mode |
+| Ctrl+C in terminal | Exit VoxNav |
 
-Command List
-Mouse Movement
+## Example commands
 
-up
-down
-left
-right
-move up
-move down
-move left
-move right
+- Movement: `move up`, `move right faster`, `hold left`, `stop`
+- Mouse: `click`, `double click`, `right click`, `scroll down`
+- Browser/editing: `new tab`, `previous tab`, `copy`, `undo`
+- Windows/media: `alt tab`, `minimize window`, `volume up`, `next track`
+- Apps: `open chrome`, `open notepad`, `open calculator`
+- Dictation: `dictate`, then ordinary speech or commands such as `new line` and `question mark`
 
-Speed modifiers:
-move up slowly
-move right faster
-move down more
+Application names and executable paths are configured in `config.py`.
 
-Continuous movement:
-hold up
-hold down
-hold left
-hold right
+## Safety and privacy
 
-Stop:
-stop
-ESC
+VoxNav can type, click, launch programs, and send global shortcuts to the active desktop. Review `config.py` before running it, keep the Escape stop hotkey available, and test in non-sensitive applications first.
 
-Clicking
+The current speech-recognition backend sends audio to an external Google service. Do not dictate sensitive information until an offline backend and explicit privacy controls are implemented.
 
-click
-double click
-right click
+## Validation status
 
-Scrolling
+No automated tests or CI workflow currently exist. The command parser is the best first testing target because it can be validated with a fake action executor without moving the real mouse.
 
-scroll up
-scroll down
+## Known limitations
 
-Keyboard / Shortcuts
+- commands currently require close phrase matches
+- speech recognition requires internet access
+- application mappings are Windows-specific
+- foreground context is not checked before keyboard actions
+- launch commands use shell execution and need tighter allowlisting
+- there is no visible tray status or confirmation for risky commands
 
-Tabs:
-new tab
-close tab
-switch tab
-next tab
-previous tab
-reopen tab
+## Roadmap
 
-Editing:
-copy
-paste
-cut
-undo
-redo
-select all
+- add unit tests for parsing and state transitions
+- replace shell-based launch behavior with strict executable mappings
+- add offline speech recognition with Vosk or Whisper
+- add audible/visual confirmation and cancellation
+- add custom commands and a system-tray interface
+- package a signed Windows build after safety testing
 
-Keys:
-enter
-press enter
-escape
-press escape
+## License and authorship
 
-Window control:
-alt tab
-minimize window
-close window
-
-Media Control
-
-pause music
-play
-next track
-previous track
-volume up
-volume down
-mute
-
-Application Launching
-
-open chrome
-open spotify
-open discord
-open notepad
-open calculator
-open explorer
-open file explorer
-open paint
-
-Dictation Mode
-Start Dictation
-
-dictate
-start dictation
-enter dictation mode
-
-Stop Dictation
-
-stop dictation
-exit dictation mode
-leave dictation mode
-ESC
-
-Text Input
-
-Any speech will be typed into the active window.
-
-Example:
-hello how are you
-
-Formatting Commands
-
-comma → ,
-period → .
-question mark → ?
-exclamation mark → !
-colon → :
-semicolon → ;
-quote → "
-apostrophe → '
-
-Structure
-
-new line
-new paragraph
-
-Editing
-
-backspace
-delete word
-select all
-tab
-
-Limitations
-Commands must match exact phrases
-No natural language understanding yet
-Requires internet (Google speech recognition)
-PyAudio dependency required for microphone input
-Future Improvements
-Offline speech recognition (Whisper / Vosk)
-Wake word activation
-Custom command system
-Natural language parsing
-System tray interface
-Windows executable packaging
+Created by [SimpleCaci](https://github.com/SimpleCaci) and released under the [MIT License](LICENSE).
