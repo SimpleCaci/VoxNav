@@ -1,9 +1,8 @@
 """Command parsing logic for VoxNav."""
 
-from typing import Callable
-from typing import Dict
+from collections.abc import Callable
+from typing import Any
 
-from actions import ActionExecutor
 from config import (
     DICTATION_START_COMMANDS,
     DICTATION_STOP_COMMANDS,
@@ -13,15 +12,23 @@ from config import (
 )
 from state import AppState
 
+EventSink = Callable[[str, str], None]
+
 
 class CommandParser:
-    """Routes recognized speech to command or dictation actions."""
+    """Route normalized transcripts and report each decision stage."""
 
-    def __init__(self, app_state: AppState, action_executor: ActionExecutor) -> None:
+    def __init__(
+        self,
+        app_state: AppState,
+        action_executor: Any,
+        event_sink: EventSink | None = None,
+    ) -> None:
         self._app_state = app_state
         self._action_executor = action_executor
+        self._event_sink = event_sink or (lambda stage, message: None)
 
-        self._command_handlers: Dict[str, Callable[[], None]] = {
+        self._command_handlers: dict[str, Callable[[], None]] = {
             "click": self._action_executor.left_click,
             "double click": self._action_executor.double_click,
             "right click": self._action_executor.right_click,
@@ -31,12 +38,8 @@ class CommandParser:
             "close tab": lambda: self._action_executor.send_hotkey("ctrl+w"),
             "switch tab": lambda: self._action_executor.send_hotkey("ctrl+tab"),
             "next tab": lambda: self._action_executor.send_hotkey("ctrl+tab"),
-            "previous tab": lambda: self._action_executor.send_hotkey(
-                "ctrl+shift+tab"
-            ),
-            "reopen tab": lambda: self._action_executor.send_hotkey(
-                "ctrl+shift+t"
-            ),
+            "previous tab": lambda: self._action_executor.send_hotkey("ctrl+shift+tab"),
+            "reopen tab": lambda: self._action_executor.send_hotkey("ctrl+shift+t"),
             "copy": lambda: self._action_executor.send_hotkey("ctrl+c"),
             "paste": lambda: self._action_executor.send_hotkey("ctrl+v"),
             "cut": lambda: self._action_executor.send_hotkey("ctrl+x"),
@@ -53,42 +56,41 @@ class CommandParser:
             "mute": lambda: self._action_executor.send_hotkey("volume mute"),
             "volume up": lambda: self._action_executor.send_hotkey("volume up"),
             "volume down": lambda: self._action_executor.send_hotkey("volume down"),
-            "pause music": lambda: self._action_executor.send_hotkey(
-                "play/pause media"
-            ),
-            "play music": lambda: self._action_executor.send_hotkey(
-                "play/pause media"
-            ),
+            "pause music": lambda: self._action_executor.send_hotkey("play/pause media"),
+            "play music": lambda: self._action_executor.send_hotkey("play/pause media"),
             "pause": lambda: self._action_executor.send_hotkey("play/pause media"),
             "play": lambda: self._action_executor.send_hotkey("play/pause media"),
             "next track": lambda: self._action_executor.send_hotkey("next track"),
-            "previous track": lambda: self._action_executor.send_hotkey(
-                "previous track"
-            ),
+            "previous track": lambda: self._action_executor.send_hotkey("previous track"),
             "faster": lambda: self._action_executor.set_mouse_speed("fast"),
             "slower": lambda: self._action_executor.set_mouse_speed("slow"),
             "normal speed": lambda: self._action_executor.set_mouse_speed("normal"),
         }
 
-    def handle_transcript(self, transcript: str) -> None:
-        """Handles recognized speech according to the current mode.
+    def _emit(self, stage: str, message: str) -> None:
+        self._event_sink(stage, message)
 
-        Args:
-            transcript: The normalized recognized speech text.
-        """
+    def handle_transcript(self, transcript: str) -> None:
+        """Handle recognized speech according to the current mode."""
+        transcript = " ".join(transcript.strip().lower().split())
         if not transcript:
             return
+
+        self._emit("heard", transcript)
 
         if self._app_state.dictation_mode_enabled:
             self._handle_dictation_mode(transcript)
             return
 
         if transcript in DICTATION_START_COMMANDS:
+            self._emit("matched", "dictation mode")
             self.enable_dictation_mode()
             return
 
         if transcript in STOP_COMMANDS:
+            self._emit("matched", "emergency stop")
             self._action_executor.stop_continuous_movement()
+            self._emit("executed", "continuous movement stopped")
             return
 
         if self._handle_exact_command(transcript):
@@ -100,64 +102,53 @@ class CommandParser:
         if self._handle_open_command(transcript):
             return
 
-        print(f"No mapped command found for: {transcript}")
+        self._emit("ignored", f'no mapped command for "{transcript}"')
 
     def enable_dictation_mode(self) -> None:
-        """Enables dictation mode."""
         self._app_state.dictation_mode_enabled = True
-        print("Dictation mode enabled.")
+        self._emit("executed", "dictation mode enabled")
 
     def disable_dictation_mode(self) -> None:
-        """Disables dictation mode."""
         self._app_state.dictation_mode_enabled = False
-        print("Dictation mode disabled.")
+        self._emit("executed", "dictation mode disabled")
 
     def _handle_dictation_mode(self, transcript: str) -> None:
-        """Handles speech while dictation mode is enabled.
-
-        Args:
-            transcript: The normalized recognized speech text.
-        """
         if transcript in DICTATION_STOP_COMMANDS or transcript in STOP_COMMANDS:
+            self._emit("matched", "leave dictation mode")
             self.disable_dictation_mode()
             return
 
         if self._action_executor.handle_special_dictation_command(transcript):
+            self._emit("matched", f"dictation control: {transcript}")
+            self._emit("executed", f"dictation control: {transcript}")
             return
 
+        self._emit("matched", "dictation text")
         self._action_executor.type_text(transcript)
+        self._emit("executed", f"typed {len(transcript)} characters")
 
     def _handle_exact_command(self, transcript: str) -> bool:
-        """Handles exact command matches.
-
-        Args:
-            transcript: The normalized recognized speech text.
-
-        Returns:
-            True if the command was handled; otherwise False.
-        """
         handler = self._command_handlers.get(transcript)
         if handler is None:
             return False
 
+        self._emit("matched", f"exact command: {transcript}")
         handler()
+        self._emit("executed", transcript)
         return True
 
     def _handle_mouse_command(self, transcript: str) -> bool:
-        """Handles one-shot and continuous mouse commands.
-
-        Args:
-            transcript: The normalized recognized speech text.
-
-        Returns:
-            True if handled; otherwise False.
-        """
         step_px = self._app_state.mouse_step_px
+        command = transcript
 
         if "slowly" in transcript or "a little" in transcript:
             step_px = SLOW_MOUSE_STEP_PX
         elif "faster" in transcript or "far" in transcript or "more" in transcript:
             step_px = FAST_MOUSE_STEP_PX
+
+        for modifier in (" slowly", " a little", " faster", " far", " more"):
+            command = command.replace(modifier, "")
+        command = command.strip()
 
         one_shot_moves = {
             "up": (0, -step_px),
@@ -170,31 +161,32 @@ class CommandParser:
             "move right": (step_px, 0),
         }
 
-        move_vector = one_shot_moves.get(transcript)
+        move_vector = one_shot_moves.get(command)
         if move_vector is not None:
             dx, dy = move_vector
+            self._emit("matched", f"pointer movement: {command}")
             self._action_executor.move_mouse(dx, dy)
+            self._emit("executed", f"moved pointer by ({dx}, {dy})")
             return True
 
-        if transcript.startswith("hold "):
-            direction = transcript.replace("hold ", "", 1).strip()
+        if command.startswith("hold "):
+            direction = command.replace("hold ", "", 1).strip()
             if direction in {"up", "down", "left", "right"}:
+                self._emit("matched", f"continuous pointer movement: {direction}")
                 self._action_executor.start_continuous_movement(direction)
+                self._emit("executed", f"holding pointer {direction}")
                 return True
 
         return False
 
     def _handle_open_command(self, transcript: str) -> bool:
-        """Handles app-launch commands.
-
-        Args:
-            transcript: The normalized recognized speech text.
-
-        Returns:
-            True if an app command was handled; otherwise False.
-        """
         if not transcript.startswith("open "):
             return False
 
         app_name = transcript.replace("open ", "", 1).strip()
-        return self._action_executor.launch_application(app_name)
+        self._emit("matched", f"application launch: {app_name}")
+        if self._action_executor.launch_application(app_name):
+            self._emit("executed", f"opened {app_name}")
+        else:
+            self._emit("ignored", f'"{app_name}" is not in the application allowlist')
+        return True
