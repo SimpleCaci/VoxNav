@@ -106,6 +106,8 @@ The standard-library test suite covers transcript normalization, exact commands,
 python -m unittest discover -s tests -v
 ```
 
+GitHub Actions runs the side-effect-free parser suite and compiles the Python modules on every push and pull request. Windows-only microphone, hotkey, and desktop-control checks remain intentionally manual.
+
 Microphone recognition, global hotkeys, and real desktop actions still require an intentional Windows manual test.
 
 ## Known limitations
