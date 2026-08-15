@@ -4,7 +4,7 @@ A Windows voice-control assistant for mouse movement, keyboard shortcuts, applic
 
 VoxNav explores hands-free desktop navigation with an intentionally explicit command vocabulary. Global hotkeys trigger listening and dictation modes, while a separate parser maps recognized phrases to local desktop actions.
 
-> **Status:** functional Windows prototype. The parser has deterministic tests, a side-effect-free demo mode, and visible decision tracing. Offline recognition, broader device testing, and safeguards for high-impact desktop actions are still needed.
+> **Status:** functional Windows prototype with deterministic parser tests, a side-effect-free demo mode, and visible decision tracing.
 
 ## Capabilities
 
@@ -94,9 +94,7 @@ Application names and executable paths are configured in `config.py`.
 
 ## Safety and privacy
 
-<img src="docs/media/project-visual.png" width="320" alt="Illustrative voice-command safety and execution pipeline">
-
-*Illustrative project visual—not a runtime screenshot.*
+<img src="docs/media/project-visual.png" align="right" width="240" alt="Voice command safety and execution pipeline">
 
 VoxNav can type, click, launch programs, and send global shortcuts to the active desktop. Review `config.py` before running it, keep the Escape stop hotkey available, and test in non-sensitive applications first.
 
