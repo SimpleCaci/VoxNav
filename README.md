@@ -94,6 +94,10 @@ Application names and executable paths are configured in `config.py`.
 
 ## Safety and privacy
 
+<img src="docs/media/project-visual.png" width="320" alt="Illustrative voice-command safety and execution pipeline">
+
+*Illustrative project visual—not a runtime screenshot.*
+
 VoxNav can type, click, launch programs, and send global shortcuts to the active desktop. Review `config.py` before running it, keep the Escape stop hotkey available, and test in non-sensitive applications first.
 
 The current speech-recognition backend sends audio to an external Google service. Do not dictate sensitive information until an offline backend and explicit privacy controls are implemented.
