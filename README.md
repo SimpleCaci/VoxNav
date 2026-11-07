@@ -2,7 +2,15 @@
 
 A Windows voice-control assistant for mouse movement, keyboard shortcuts, application launching, media control, and real-time dictation.
 
-VoxNav explores hands-free desktop navigation with an intentionally explicit command vocabulary. Global hotkeys trigger listening and dictation modes, while a separate parser maps recognized phrases to local desktop actions.
+[![Checks](https://github.com/SimpleCaci/VoxNav/actions/workflows/validate.yml/badge.svg)](https://github.com/SimpleCaci/VoxNav/actions/workflows/validate.yml)
+
+[Setup](#setup) · [Safe preview](#safe-command-preview) · [Commands](#example-commands) · [Contribute](CONTRIBUTING.md)
+
+<img src="docs/media/project-visual.png" width="640" alt="Illustration of speech routed to mouse, keyboard, media and application commands">
+
+*Project illustration; see the run instructions for the current prototype.*
+
+Global hotkeys trigger listening and dictation. A separate parser maps recognized phrases to a fixed set of desktop actions.
 
 > **Status:** functional Windows prototype with deterministic parser tests, a side-effect-free demo mode, and visible decision tracing.
 
@@ -94,8 +102,6 @@ Application names and executable paths are configured in `config.py`.
 
 ## Safety and privacy
 
-<img src="docs/media/project-visual.png" align="right" width="240" alt="Voice command safety and execution pipeline">
-
 VoxNav can type, click, launch programs, and send global shortcuts to the active desktop. Review `config.py` before running it, keep the Escape stop hotkey available, and test in non-sensitive applications first.
 
 The current speech-recognition backend sends audio to an external Google service. Do not dictate sensitive information until an offline backend and explicit privacy controls are implemented.
@@ -110,7 +116,6 @@ python -m unittest discover -s tests -v
 
 GitHub Actions runs the side-effect-free parser suite and compiles the Python modules on every push and pull request. Windows-only microphone, hotkey, and desktop-control checks remain intentionally manual.
 
-Microphone recognition, global hotkeys, and real desktop actions still require an intentional Windows manual test.
 
 ## Known limitations
 
